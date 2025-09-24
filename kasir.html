@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danendra Coffee - Kasir</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .order-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .btn-primary {
+            background-color: #A0522D;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #8B4513;
+        }
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #4b5563;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        .modal {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .pulse-animation {
+            animation: pulse-ring 1s cubic-bezier(0.4, 0, 0.6, 1) infinite, pulse-dot 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.33);
+            }
+            80%, 100% {
+                opacity: 0;
+            }
+        }
+        @keyframes pulse-dot {
+            0% {
+                transform: scale(0.8);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(0.8);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container">
+        <header class="flex justify-between items-center mb-6 pb-4 border-b">
+            <div class="flex items-center space-x-4">
+                <img src="https://placehold.co/50x50/A0522D/ffffff?text=DC" alt="Danendra Coffee Logo" class="rounded-full">
+                <h1 class="text-3xl font-bold text-gray-800">Danendra Coffee</h1>
+            </div>
+            <button id="addNewOrderBtn" class="btn btn-primary">Tambah Pesanan Baru</button>
+        </header>
+        
+        <!-- User ID & Connection Status -->
+        <div class="mb-6 flex justify-between items-center bg-gray-200 p-3 rounded-lg">
+            <span class="text-xs font-mono text-gray-600">User ID: <span id="userIdDisplay">Local Only</span></span>
+            <div class="flex items-center space-x-2">
+                <span id="connectionStatus" class="text-xs font-medium text-gray-600">Terputus</span>
+                <span id="connectionIndicator" class="relative flex h-3 w-3">
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Ringkasan Harian -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">Ringkasan Harian</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <p class="text-lg text-gray-500">Total Minuman Terjual</p>
+                    <p id="total-sold-count" class="text-4xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-lg text-gray-500">Total Pendapatan</p>
+                    <p id="total-revenue" class="text-4xl font-bold text-gray-800">Rp 0</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-lg text-gray-500">Pesanan Selesai</p>
+                    <p id="completed-orders-count" class="text-4xl font-bold text-gray-800">0</p>
+                </div>
+            </div>
+            <div class="mt-6">
+                <h3 class="font-bold text-gray-700">Daftar Pesanan Selesai</h3>
+                <ul id="completed-orders-list" class="mt-2 space-y-1 text-sm text-gray-600">
+                    <p class="text-gray-500 text-sm">Belum ada pesanan yang selesai.</p>
+                </ul>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="endOfDayBtn" class="btn btn-primary">Akhiri Hari & Simpan Laporan</button>
+            </div>
+        </div>
+        
+        <!-- Order Management Columns -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- Kolom Pesanan Baru -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-700">Pesanan Baru</h2>
+                    <span id="new-orders-count" class="text-sm font-semibold text-gray-500">Total: 0</span>
+                </div>
+                <div id="new-orders-container" class="space-y-4">
+                    <p class="text-gray-500 text-sm text-center">Menunggu pesanan...</p>
+                </div>
+            </div>
+
+            <!-- Kolom Menunggu -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-700">Menunggu</h2>
+                    <span id="waiting-orders-count" class="text-sm font-semibold text-gray-500">Total: 0</span>
+                </div>
+                <div id="waiting-orders-container" class="space-y-4">
+                    <p class="text-gray-500 text-sm text-center">Tidak ada pesanan yang sedang diproses.</p>
+                </div>
+            </div>
+
+            <!-- Kolom Siap Diambil -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-700">Siap Diambil</h2>
+                    <span id="pickup-orders-count" class="text-sm font-semibold text-gray-500">Total: 0</span>
+                </div>
+                <div id="pickup-orders-container" class="space-y-4">
+                    <p class="text-gray-500 text-sm text-center">Tidak ada pesanan siap ambil.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daftar Laporan Harian -->
+        <div class="bg-white p-6 rounded-lg shadow-md mt-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">Laporan Harian Tersimpan</h2>
+            <div id="daily-reports-list" class="space-y-4">
+                <p class="text-gray-500 text-sm">Belum ada laporan harian yang disimpan.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Tambah Pesanan Baru -->
+    <div id="addOrderModal" class="fixed inset-0 hidden flex items-center justify-center z-50 modal">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg modal-content">
+            <h3 class="text-2xl font-bold mb-6 text-gray-800">Tambah Pesanan</h3>
+            
+            <!-- Customer Name Input -->
+            <div class="mb-6">
+                <label for="kasirCustomerName" class="font-semibold mb-2 block">Nama Pelanggan:</label>
+                <input type="text" id="kasirCustomerName" placeholder="Masukkan nama pelanggan (opsional)" class="p-3 border rounded-md w-full focus:outline-none focus:ring-2 focus:ring-amber-500">
+            </div>
+
+            <!-- Customer Note Input -->
+            <div class="mb-6">
+                <label for="orderNote" class="font-semibold mb-2 block">Catatan Pesanan:</label>
+                <textarea id="orderNote" placeholder="Tambahkan catatan, seperti 'kurang manis' atau 'tanpa es'" rows="2" class="p-3 border rounded-md w-full focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+            </div>
+
+            <!-- Menu Item Selection -->
+            <div class="mb-6">
+                <h4 class="font-semibold mb-2">Pilih Item:</h4>
+                <div id="modal-menu-grid" class="grid grid-cols-2 gap-4">
+                    <!-- Menu items will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Order Summary within Modal -->
+            <div class="border-t pt-4 mt-4">
+                <h4 class="font-semibold mb-2">Ringkasan Pesanan:</h4>
+                <div id="modal-order-list" class="space-y-2">
+                    <p class="text-gray-500 text-sm">Keranjang kosong.</p>
+                </div>
+                <div class="mt-4 flex justify-between items-center text-lg font-bold">
+                    <span>Total:</span>
+                    <span id="modal-total-price">Rp 0</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end gap-4 mt-6">
+                <button id="cancelOrderBtn" class="btn btn-secondary">Batalkan Pesanan</button>
+                <button id="saveOrderBtn" class="btn btn-primary">Simpan & Mulai Pesanan</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for Hot/Ice and Sugar -->
+    <div id="optionsModal" class="fixed inset-0 hidden items-center justify-center z-50 modal">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-4">Pilih Opsi</h3>
+            <div id="options-content">
+                <!-- Options will be rendered here -->
+            </div>
+            <div class="flex justify-end gap-4 mt-6">
+                <button id="optionsModalCancelBtn" class="btn btn-secondary">Batal</button>
+                <button id="optionsModalAddBtn" class="btn btn-primary">Tambah ke Pesanan</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuItems = [
+                { id: 1, name: "Espresso", price: 10000, image: "https://placehold.co/100x100/A0522D/ffffff?text=Espresso" },
+                { id: 2, name: "Latte", price: 15000, image: "https://placehold.co/100x100/DEB887/ffffff?text=Latte" },
+                { id: 3, name: "Cappuccino", price: 15000, image: "https://placehold.co/100x100/D2B48C/ffffff?text=Cappuccino" },
+                { id: 4, name: "Americano", price: 13000, image: "https://placehold.co/100x100/8B4513/ffffff?text=Americano" },
+                { id: 5, name: "V60", price: 38000, image: "https://placehold.co/100x100/964B00/ffffff?text=V60" },
+            ];
+
+            const ORDER_STATUS = {
+                NEW: 'new',
+                WAITING: 'waiting',
+                PICKUP: 'pickup',
+                COMPLETED: 'completed'
+            };
+
+            let orders = [];
+            let newOrderCart = [];
+            let completedOrders = [];
+            let currentItemForModal = null;
+            let orderCounter = 0;
+            let dailyReports = [];
+
+            const newOrdersContainer = document.getElementById('new-orders-container');
+            const waitingOrdersContainer = document.getElementById('waiting-orders-container');
+            const pickupOrdersContainer = document.getElementById('pickup-orders-container');
+            const newOrdersCount = document.getElementById('new-orders-count');
+            const waitingOrdersCount = document.getElementById('waiting-orders-count');
+            const pickupOrdersCount = document = document.getElementById('pickup-orders-count');
+            const totalSoldCount = document.getElementById('total-sold-count');
+            const totalRevenue = document.getElementById('total-revenue');
+            const completedOrdersCount = document.getElementById('completed-orders-count');
+            const addNewOrderBtn = document.getElementById('addNewOrderBtn');
+            const addOrderModal = document.getElementById('addOrderModal');
+            const saveOrderBtn = document.getElementById('saveOrderBtn');
+            const modalMenuGrid = document.getElementById('modal-menu-grid');
+            const modalOrderList = document.getElementById('modal-order-list');
+            const modalTotalPriceEl = document.getElementById('modal-total-price');
+            const optionsModal = document.getElementById('optionsModal');
+            const optionsContent = document.getElementById('options-content');
+            const optionsModalCancelBtn = document.getElementById('optionsModalCancelBtn');
+            const optionsModalAddBtn = document.getElementById('optionsModalAddBtn');
+            const cancelOrderBtn = document.getElementById('cancelOrderBtn');
+            const kasirCustomerNameInput = document.getElementById('kasirCustomerName');
+            const orderNoteInput = document.getElementById('orderNote');
+            const completedOrdersList = document.getElementById('completed-orders-list');
+            const endOfDayBtn = document.getElementById('endOfDayBtn');
+            const dailyReportsList = document.getElementById('daily-reports-list');
+            
+            // --- Fungsionalitas Penyimpanan Lokal ---
+            function saveData() {
+                try {
+                    const data = JSON.stringify({ orders, completedOrders, orderCounter, dailyReports });
+                    localStorage.setItem('danendraCoffeeData', data);
+                } catch (e) {
+                    console.error('Gagal menyimpan data ke localStorage', e);
+                }
+            }
+
+            function loadData() {
+                try {
+                    const data = localStorage.getItem('danendraCoffeeData');
+                    if (data) {
+                        const parsedData = JSON.parse(data);
+                        orders = parsedData.orders || [];
+                        completedOrders = parsedData.completedOrders || [];
+                        orderCounter = parsedData.orderCounter || 0;
+                        dailyReports = parsedData.dailyReports || [];
+                    }
+                } catch (e) {
+                    console.error('Gagal memuat data dari localStorage', e);
+                    localStorage.removeItem('danendraCoffeeData');
+                }
+            }
+            // --- Akhir Fungsionalitas Penyimpanan Lokal ---
+
+            function renderModalMenu() {
+                modalMenuGrid.innerHTML = '';
+                menuItems.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'cursor-pointer p-4 border rounded-lg hover:bg-gray-50 transition';
+                    itemDiv.innerHTML = `<h4 class="font-medium">${item.name}</h4><p class="text-sm text-gray-600">Rp ${item.price.toLocaleString('id-ID')}</p>`;
+                    itemDiv.addEventListener('click', () => {
+                        currentItemForModal = item;
+                        showOptionsModal(item);
+                    });
+                    modalMenuGrid.appendChild(itemDiv);
+                });
+            }
+
+            function showOptionsModal(item) {
+                optionsContent.innerHTML = '';
+                
+                if (item.name === "Espresso" || item.name === "V60") {
+                    optionsContent.innerHTML = `
+                        <h4 class="font-semibold mb-2">Suhu:</h4>
+                        <div class="flex gap-4 mb-4">
+                            <label class="flex items-center"><input type="radio" name="temp" value="Hot" checked class="mr-2"> Hot</label>
+                            <label class="flex items-center"><input type="radio" name="temp" value="Ice" class="mr-2"> Ice</label>
+                        </div>
+                    `;
+                    if (item.name === "Espresso") {
+                         optionsContent.innerHTML = `
+                             <input type="hidden" name="temp" value="Hot">
+                             <h4 class="font-semibold mb-2">Suhu: Hot</h4>
+                         `;
+                    }
+                     optionsContent.innerHTML += `<input type="hidden" name="sugar" value="Normal">`;
+                } else {
+                    optionsContent.innerHTML = `
+                        <h4 class="font-semibold mb-2">Suhu:</h4>
+                        <div class="flex gap-4 mb-4">
+                            <label class="flex items-center"><input type="radio" name="temp" value="Hot" checked class="mr-2"> Hot</label>
+                            <label class="flex items-center"><input type="radio" name="temp" value="Ice" class="mr-2"> Ice</label>
+                        </div>
+                        <h4 class="font-semibold mb-2">Gula:</h4>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center"><input type="radio" name="sugar" value="No Sugar" class="mr-2"> No Sugar</label>
+                            <label class="flex items-center"><input type="radio" name="sugar" value="Less Sugar" class="mr-2"> Less Sugar</label>
+                            <label class="flex items-center"><input type="radio" name="sugar" value="Normal" checked class="mr-2"> Normal</label>
+                            <label class="flex items-center"><input type="radio" name="sugar" value="More Sugar" class="mr-2"> More Sugar</label>
+                        </div>
+                    `;
+                }
+                
+                optionsModal.classList.remove('hidden');
+                optionsModal.classList.add('flex');
+            }
+
+            optionsModalAddBtn.addEventListener('click', () => {
+                const tempEl = optionsContent.querySelector('input[name="temp"]:checked');
+                const sugarEl = optionsContent.querySelector('input[name="sugar"]:checked');
+
+                const temp = tempEl ? tempEl.value : 'Hot';
+                const sugar = sugarEl ? sugarEl.value : 'Normal';
+
+                let addedPrice = 0;
+                if (temp === "Ice" && sugar === "More Sugar") {
+                    addedPrice = 5000;
+                } else if (temp === "Ice" && sugar === "Normal") {
+                    addedPrice = 2000;
+                } else if (sugar === "More Sugar") {
+                    addedPrice = 3000;
+                }
+                
+                const finalPrice = currentItemForModal.price + addedPrice;
+                const existingItem = newOrderCart.find(o => o.name === currentItemForModal.name && o.temp === temp && o.sugar === sugar);
+
+                if (existingItem) {
+                    existingItem.quantity++;
+                } else {
+                    newOrderCart.push({ ...currentItemForModal, price: finalPrice, quantity: 1, temp, sugar, addedPrice });
+                }
+                renderModalCart();
+                optionsModal.classList.add('hidden');
+                optionsModal.classList.remove('flex');
+            });
+
+            function renderModalCart() {
+                modalOrderList.innerHTML = '';
+                if (newOrderCart.length === 0) {
+                    modalOrderList.innerHTML = '<p class="text-gray-500 text-sm">Keranjang kosong.</p>';
+                    saveOrderBtn.disabled = true;
+                    saveOrderBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    let total = 0;
+                    newOrderCart.forEach((item, index) => {
+                        const itemTotal = item.price * item.quantity;
+                        total += itemTotal;
+                        const itemEl = document.createElement('div');
+                        itemEl.className = 'flex justify-between items-center py-1';
+                        itemEl.innerHTML = `
+                            <div class="flex-1">
+                                <span class="text-gray-800">${item.name} (${item.temp}, ${item.sugar})</span>
+                                <span class="text-xs text-gray-500 block">Rp ${item.price.toLocaleString('id-ID')} x${item.quantity}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <button class="text-red-500 hover:text-red-700 font-bold text-lg leading-none p-1 delete-item-btn" data-index="${index}">
+                                    &times;
+                                </button>
+                            </div>
+                        `;
+                        modalOrderList.appendChild(itemEl);
+                    });
+                    
+                    document.querySelectorAll('.delete-item-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const index = e.target.dataset.index;
+                            newOrderCart.splice(index, 1);
+                            renderModalCart();
+                        });
+                    });
+
+                    modalTotalPriceEl.textContent = `Rp ${total.toLocaleString('id-ID')}`;
+                    saveOrderBtn.disabled = false;
+                    saveOrderBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+
+            saveOrderBtn.addEventListener('click', () => {
+                if (newOrderCart.length > 0) {
+                    const customerName = kasirCustomerNameInput ? kasirCustomerNameInput.value.trim() : 'Tanpa Nama';
+                    const orderNote = orderNoteInput ? orderNoteInput.value.trim() : '';
+
+                    const newOrder = {
+                        id: (orderCounter++).toString(),
+                        customerName: customerName.length > 0 ? customerName : 'Tanpa Nama',
+                        items: newOrderCart,
+                        total: newOrderCart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                        status: ORDER_STATUS.NEW,
+                        note: orderNote,
+                        timestamp: Date.now()
+                    };
+                    
+                    orders.push(newOrder);
+                    renderOrders();
+                    saveData(); // Simpan data setelah pesanan baru dibuat
+
+                    newOrderCart = [];
+                    if (kasirCustomerNameInput) {
+                        kasirCustomerNameInput.value = '';
+                    }
+                    if (orderNoteInput) {
+                        orderNoteInput.value = '';
+                    }
+                    addOrderModal.classList.add('hidden');
+                    addOrderModal.classList.remove('flex');
+                }
+            });
+            
+            function updateOrderStatus(id, newStatus) {
+                const orderIndex = orders.findIndex(o => o.id === id);
+                if (orderIndex !== -1) {
+                    const order = orders[orderIndex];
+                    if (newStatus === ORDER_STATUS.COMPLETED) {
+                        completedOrders.push(order);
+                        orders.splice(orderIndex, 1);
+                        updateDailySummary();
+                    } else {
+                        orders[orderIndex].status = newStatus;
+                    }
+                    renderOrders();
+                    saveData(); // Simpan data setelah status pesanan berubah
+                }
+            }
+
+            function deleteOrder(id) {
+                orders = orders.filter(order => order.id !== id);
+                renderOrders();
+                saveData(); // Simpan data setelah pesanan dihapus
+            }
+
+            // Fungsi baru untuk menghapus pesanan yang selesai
+            function deleteCompletedOrder(id) {
+                completedOrders = completedOrders.filter(order => order.id !== id);
+                updateDailySummary();
+                saveData(); // Simpan data setelah pesanan selesai dihapus
+            }
+
+            function renderOrders() {
+                newOrdersContainer.innerHTML = '';
+                waitingOrdersContainer.innerHTML = '';
+                pickupOrdersContainer.innerHTML = '';
+
+                const newOrders = orders.filter(o => o.status === ORDER_STATUS.NEW);
+                const waitingOrders = orders.filter(o => o.status === ORDER_STATUS.WAITING);
+                const pickupOrders = orders.filter(o => o.status === ORDER_STATUS.PICKUP);
+                
+                newOrdersCount.textContent = `Total: ${newOrders.length}`;
+                waitingOrdersCount.textContent = `Total: ${waitingOrders.length}`;
+                pickupOrdersCount.textContent = `Total: ${pickupOrders.length}`;
+                
+                if (newOrders.length === 0) newOrdersContainer.innerHTML = '<p class="text-gray-500 text-sm text-center">Tidak ada pesanan baru.</p>';
+                if (waitingOrders.length === 0) waitingOrdersContainer.innerHTML = '<p class="text-gray-500 text-sm text-center">Tidak ada pesanan yang sedang diproses.</p>';
+                if (pickupOrders.length === 0) pickupOrdersContainer.innerHTML = '<p class="text-gray-500 text-sm text-center">Tidak ada pesanan siap ambil.</p>';
+
+                newOrders.forEach(renderOrderCard);
+                waitingOrders.forEach(renderOrderCard);
+                pickupOrders.forEach(renderOrderCard);
+            }
+
+            function renderOrderCard(order) {
+                const card = document.createElement('div');
+                card.className = 'order-card';
+                card.innerHTML = `
+                    <h4 class="font-bold text-lg mb-2">Pesanan #${order.id} - ${order.customerName ? order.customerName : 'Tanpa Nama'}</h4>
+                    <ul class="text-sm text-gray-700 list-disc list-inside mb-4">
+                        ${order.items.map(item => `
+                            <li>
+                                ${item.name} (${item.temp}, ${item.sugar}) x${item.quantity} 
+                                <span class="text-xs text-gray-500">
+                                    (Rp ${item.price.toLocaleString('id-ID')})
+                                </span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                    ${order.note ? `<p class="text-sm text-gray-600 italic mb-4">Catatan: ${order.note}</p>` : ''}
+                    <div class="font-bold text-gray-800 text-right mb-4">
+                        Total: Rp ${order.total.toLocaleString('id-ID')}
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        ${order.status === ORDER_STATUS.NEW ? `<button class="btn btn-primary w-full start-btn" data-id="${order.id}">Mulai Pesanan</button>` : ''}
+                        ${order.status === ORDER_STATUS.WAITING ? `<button class="btn btn-primary w-full ready-btn" data-id="${order.id}">Pesanan Siap</button>` : ''}
+                        ${order.status === ORDER_STATUS.PICKUP ? `<button class="btn btn-primary w-full complete-btn" data-id="${order.id}">Selesai</button>` : ''}
+                        <button class="btn btn-danger w-full delete-btn" data-id="${order.id}">Hapus</button>
+                    </div>
+                `;
+
+                if (order.status === ORDER_STATUS.NEW) {
+                    newOrdersContainer.appendChild(card);
+                    card.querySelector('.start-btn').addEventListener('click', () => updateOrderStatus(order.id, ORDER_STATUS.WAITING));
+                } else if (order.status === ORDER_STATUS.WAITING) {
+                    waitingOrdersContainer.appendChild(card);
+                    card.querySelector('.ready-btn').addEventListener('click', () => updateOrderStatus(order.id, ORDER_STATUS.PICKUP));
+                } else if (order.status === ORDER_STATUS.PICKUP) {
+                    pickupOrdersContainer.appendChild(card);
+                    card.querySelector('.complete-btn').addEventListener('click', () => updateOrderStatus(order.id, ORDER_STATUS.COMPLETED));
+                }
+                card.querySelector('.delete-btn').addEventListener('click', () => deleteOrder(order.id));
+            }
+
+            function updateDailySummary() {
+                let totalSold = 0;
+                let totalRevenueAmount = 0;
+                
+                completedOrders.forEach(order => {
+                    totalRevenueAmount += order.total;
+                    order.items.forEach(item => {
+                        totalSold += item.quantity;
+                    });
+                });
+                
+                totalSoldCount.textContent = totalSold;
+                totalRevenue.textContent = `Rp ${totalRevenueAmount.toLocaleString('id-ID')}`;
+                completedOrdersCount.textContent = completedOrders.length;
+
+                renderCompletedOrdersList();
+            }
+
+            function renderCompletedOrdersList() {
+                completedOrdersList.innerHTML = '';
+                if (completedOrders.length === 0) {
+                    completedOrdersList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada pesanan yang selesai.</p>';
+                } else {
+                    completedOrders.forEach(order => {
+                        const orderItem = document.createElement('li');
+                        orderItem.className = 'py-1 flex justify-between items-start';
+                        orderItem.innerHTML = `
+                            <div>
+                                <strong>Pesanan #${order.id}</strong> (${order.customerName ? order.customerName : 'Tanpa Nama'}) - Rp ${order.total.toLocaleString('id-ID')}
+                                <ul class="text-xs list-disc list-inside ml-4">
+                                    ${order.items.map(item => `
+                                        <li>${item.name} (${item.temp}, ${item.sugar}) x${item.quantity}</li>
+                                    `).join('')}
+                                </ul>
+                                ${order.note ? `<p class="text-xs text-gray-500 italic mt-1">Catatan: ${order.note}</p>` : ''}
+                            </div>
+                            <button class="text-red-500 hover:text-red-700 font-bold ml-4 delete-completed-btn" data-id="${order.id}">&times;</button>
+                        `;
+                        completedOrdersList.appendChild(orderItem);
+                    });
+
+                    document.querySelectorAll('.delete-completed-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const id = e.target.dataset.id;
+                            deleteCompletedOrder(id);
+                        });
+                    });
+                }
+            }
+
+            addNewOrderBtn.addEventListener('click', () => {
+                newOrderCart = [];
+                renderModalMenu();
+                renderModalCart();
+                addOrderModal.classList.remove('hidden');
+                addOrderModal.classList.add('flex');
+                if(kasirCustomerNameInput) {
+                    kasirCustomerNameInput.value = '';
+                }
+                if(orderNoteInput) {
+                    orderNoteInput.value = '';
+                }
+            });
+
+            optionsModalCancelBtn.addEventListener('click', () => {
+                optionsModal.classList.add('hidden');
+                optionsModal.classList.remove('flex');
+            });
+            
+            cancelOrderBtn.addEventListener('click', () => {
+                newOrderCart = [];
+                if(kasirCustomerNameInput) {
+                    kasirCustomerNameInput.value = '';
+                }
+                if(orderNoteInput) {
+                    orderNoteInput.value = '';
+                }
+                renderModalCart();
+                addOrderModal.classList.add('hidden');
+                addOrderModal.classList.remove('flex');
+            });
+            
+            endOfDayBtn.addEventListener('click', () => {
+                const totalSold = parseInt(totalSoldCount.textContent);
+                const totalRevenueAmount = parseInt(totalRevenue.textContent.replace('Rp ', '').replace(/\./g, ''));
+                
+                if (completedOrders.length > 0) {
+                    const now = new Date();
+                    const dailyReport = {
+                        date: now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }),
+                        totalSold: totalSold,
+                        totalRevenue: totalRevenueAmount,
+                        completedOrders: completedOrders
+                    };
+                    dailyReports.push(dailyReport);
+                    saveData();
+                    
+                    // Reset daily summary
+                    completedOrders = [];
+                    orders = [];
+                    orderCounter = 0;
+                    totalSoldCount.textContent = '0';
+                    totalRevenue.textContent = 'Rp 0';
+                    completedOrdersCount.textContent = '0';
+                    completedOrdersList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada pesanan yang selesai.</p>';
+                    renderOrders();
+                    renderDailyReports();
+                    alert('Laporan harian berhasil disimpan!');
+                } else {
+                    alert('Tidak ada pesanan yang diselesaikan hari ini untuk disimpan.');
+                }
+            });
+            
+            function renderDailyReports() {
+                dailyReportsList.innerHTML = '';
+                if (dailyReports.length === 0) {
+                    dailyReportsList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada laporan harian yang disimpan.</p>';
+                } else {
+                    dailyReports.forEach((report, index) => {
+                        const reportItem = document.createElement('div');
+                        reportItem.className = 'bg-gray-50 p-4 rounded-md border flex justify-between items-center';
+                        reportItem.innerHTML = `
+                            <div>
+                                <h4 class="font-bold text-gray-800">${report.date}</h4>
+                                <p class="text-sm text-gray-600 mt-1">Total Minuman: ${report.totalSold}</p>
+                                <p class="text-sm text-gray-600">Total Pendapatan: Rp ${report.totalRevenue.toLocaleString('id-ID')}</p>
+                                <p class="text-sm text-gray-600">Jumlah Pesanan: ${report.completedOrders.length}</p>
+                            </div>
+                            <button class="btn btn-danger delete-report-btn" data-index="${index}">Hapus</button>
+                        `;
+                        dailyReportsList.appendChild(reportItem);
+                    });
+                    
+                    document.querySelectorAll('.delete-report-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const index = e.target.dataset.index;
+                            deleteDailyReport(index);
+                        });
+                    });
+                }
+            }
+
+            function deleteDailyReport(index) {
+                dailyReports.splice(index, 1);
+                saveData();
+                renderDailyReports();
+            }
+
+            // Muat data saat aplikasi dimulai
+            loadData();
+            renderOrders();
+            updateDailySummary();
+            renderDailyReports();
+        });
+    </script>
+</body>
+</html>
